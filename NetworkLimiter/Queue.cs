@@ -1,4 +1,4 @@
-﻿namespace WpfApplication2
+﻿namespace NetworkLimiter
 {
     public class Queue
     {

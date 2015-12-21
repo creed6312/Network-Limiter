@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
-namespace WpfApplication2
+namespace NetworkLimiter
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -49,7 +50,7 @@ namespace WpfApplication2
             return Success;
         }
 
-        public void CheckUpdate(String message)
+        public void UpdateDebugLog(string message)
         {
             Dispatcher.Invoke((Action)delegate ()
             {
@@ -85,6 +86,7 @@ namespace WpfApplication2
                             item.Foreground = Brushes.Green;
                         else item.Foreground = Brushes.Red;
                     }
+                    lstboxQueue.SelectedIndex = 0;
                 }, 200);
             });
         }
@@ -108,6 +110,7 @@ namespace WpfApplication2
                             item.Foreground = Brushes.Green;
                         else item.Foreground = Brushes.Red;
                     }
+                    lstboxIP.SelectedIndex = 0;
                 }, 200);
             });
         }
@@ -120,6 +123,18 @@ namespace WpfApplication2
 
             // Async Task
             Initialize();
+        }
+
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            richTextBox.Document.Blocks.Clear();
+            dataGridInfo.ItemsSource = NetworkActivity.getNeworkActivity();
+            var column = dataGridInfo.Columns;
+            column[0].Width = 95;
+            column[1].Width = 78;
+            column[2].Width = 78;
+            column[3].Width = 80;
+            column[4].Width = 80;
         }
 
         public async void Initialize()
@@ -137,21 +152,17 @@ namespace WpfApplication2
             }
             catch (Exception ex)
             {
-                CheckUpdate(ex.Message);
+                UpdateDebugLog(ex.Message);
             }
+
+            System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
+            dispatcherTimer.Tick += dispatcherTimer_Tick;
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 1);
+            dispatcherTimer.Start();
         }
         #endregion
 
         #region Procedures / Functions
-        public string RandomNameGen()
-        {
-            String output = "";
-            string a = "abcdefghijklmnopqrstuvwxyz1234567890";
-            Random r = new Random();
-            for (int i = 0; i < 10; i++)
-                output += a[r.Next(35)];
-            return output;
-        }
 
         public static class DelayedExecutionService
         {
@@ -173,15 +184,15 @@ namespace WpfApplication2
             }
         }
 
-        public void LimitIP(String IP, String Comment, int Down, int Up)
+        public void LimitIP(string IP, string Comment, int Down, int Up)
         {
             mikrotik.Send("/queue/simple/add");
             mikrotik.Send("=name=" + Comment);
             mikrotik.Send("=target=" + IP);
             mikrotik.Send("=max-limit=" + (Up * 8) + "k/" + (Down * 8) + "k", true);
-            foreach (string h in mikrotik.Read())
+            foreach (string apiOutput in mikrotik.Read())
             {
-                CheckUpdate(h + "\n");
+                UpdateDebugLog(apiOutput + "\n");
             }
         }
 
@@ -189,22 +200,33 @@ namespace WpfApplication2
         {
             Hosts = new List<Host>();
             mikrotik.Send("/ip/dhcp-server/lease/print", true);
-            foreach (string h in mikrotik.Read())
+            foreach (string apiOutput in mikrotik.Read())
             {
-                if (h.Contains("address"))
+                if (apiOutput.Contains("address"))
                 {
-                    string temp = h.Remove(0, h.IndexOf("address=") + 8);
-                    if (h.Contains("comment") && h.Contains("expires-after"))
-                        Hosts.Add(new Host(temp.Substring(0, temp.IndexOf("=")), h.Substring(h.IndexOf("comment") + 8), true));
-                    else if (h.Contains("expires-after"))
-                        Hosts.Add(new Host(temp.Substring(0, temp.IndexOf("=")), "Unknown", true));
-                    else if (h.Contains("comment"))
-                        Hosts.Add(new Host(temp.Substring(0, temp.IndexOf("=")), h.Substring(h.IndexOf("comment") + 8), false));
-                    else
-                        Hosts.Add(new Host(temp.Substring(0, temp.IndexOf("=")), "Unknown",false));
+                    string comment = "";
+                    bool alive = false;
 
+                    string[] stringSplit = apiOutput.Split('=');
+                    var lstDHCPInfo = new List<KeyValuePair<string, string>>();
+                    for (int i = 1; i < stringSplit.Length-1; i+=2)
+                        lstDHCPInfo.Add(new KeyValuePair<string, string>(stringSplit[i], stringSplit[i+1]));
+
+                    // Gets IP address from Key Value Pair
+                    string ipAddress = (lstDHCPInfo.First(kvp => kvp.Key == "address").Value);
+                    // Checks that there is a Comment
+                    if (apiOutput.Contains("comment"))
+                        comment = (lstDHCPInfo.First(kvp => kvp.Key == "comment").Value);
+                    else
+                        comment = "Unknown";
+
+                    // Checks if the lease expires meaning the host is alive
+                    if (apiOutput.Contains("expires-after"))
+                        alive = true;
+
+                    Hosts.Add(new Host(ipAddress, comment, alive));
                 }
-                CheckUpdate(h + "\n");
+                UpdateDebugLog(apiOutput + "\n");
             }
             UpdateHosts();
         }
@@ -213,36 +235,36 @@ namespace WpfApplication2
         {
             Queues = new List<Queue>();
             mikrotik.Send("/queue/simple/print", true);
-            foreach (string h in mikrotik.Read())
+            foreach (string apiOutput in mikrotik.Read())
             {
-                if (h.Contains("id"))
+                if (apiOutput.Contains("id"))
                 {
-                    string id = h.Remove(0, h.IndexOf(".id.") + 9);
-                    id = id.Substring(0, id.IndexOf("="));
+                    string[] stringSplit = apiOutput.Split('=');
+                    var lstDHCPInfo = new List<KeyValuePair<string, string>>();
+                    for (int i = 1; i < stringSplit.Length - 1; i += 2)
+                        lstDHCPInfo.Add(new KeyValuePair<string, string>(stringSplit[i], stringSplit[i + 1]));
 
-                    string target = h.Remove(0, h.IndexOf("target") + 7);
-                    target = target.Substring(0, target.IndexOf("=") - 3);
+                    // Gets IP address from Key Value Pair
+                    string id = (lstDHCPInfo.First(kvp => kvp.Key == ".id").Value);
+                    // remove the /32 as address subnet not needed
+                    string target = (lstDHCPInfo.First(kvp => kvp.Key == "target").Value).Replace("/32","");
+                    // Split Up and Down speed
+                    string[] UpDown = lstDHCPInfo.First(kvp => kvp.Key == "max-limit").Value.Split('/');
 
-                    string Down = h.Remove(0, h.IndexOf("max-limit") + 10);
-                    Down = Down.Substring(0, Down.IndexOf("/"));
-
-                    string Up = h.Remove(0, h.IndexOf("max-limit") + 10);
-                    Up = Up.Remove(0, Up.IndexOf("/") + 1);
-                    Up = Up.Substring(0, Up.IndexOf("="));
-                    Queues.Add(new Queue(id, target, int.Parse(Up), int.Parse(Down)));
+                    Queues.Add(new Queue(id, target, int.Parse(UpDown[0]), int.Parse(UpDown[1])));
                 }
-                CheckUpdate(h + "\n");
+                UpdateDebugLog(apiOutput + "\n");
             }
             UpdateQueues();
         }
 
-        private void RemoveQueue(String ID)
+        private void RemoveQueue(string ID)
         {
             mikrotik.Send("/queue/simple/remove");
             mikrotik.Send("=.id=" + ID, true);
             foreach (string h in mikrotik.Read())
             {
-                CheckUpdate(h + "\n");
+                UpdateDebugLog(h + "\n");
             }
             GetQueues();
             if (lstboxQueue.Items.Count <= 0)
@@ -265,7 +287,7 @@ namespace WpfApplication2
                     mikrotik.Send("=.id=" + Queues[i].getID(), true);
                     foreach (string h in mikrotik.Read())
                     {
-                        CheckUpdate(h + "\n");
+                        UpdateDebugLog(h + "\n");
                     }
                     break;
                 }
