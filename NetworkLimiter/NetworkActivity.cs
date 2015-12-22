@@ -11,8 +11,8 @@ namespace NetworkLimiter
     class NetworkActivity
     {
         public string IP { get; set; }
-        public string Download { get; set; }
-        public string Upload { get; set; }
+        public double Download { get; set; }
+        public double Upload { get; set; }
         public string TotalSend { get; set; }
         public string TotalRecv { get; set; }
 
@@ -31,10 +31,11 @@ namespace NetworkLimiter
                     {
                         string[] t = line.Split(',');
                         // added /s for download and Upload for per second
-                        networkList.Add(new NetworkActivity (t[0] , Conversion(double.Parse(t[1])) + "/s" , Conversion(double.Parse(t[2])) + "/s", Conversion(double.Parse(t[3])), Conversion(double.Parse(t[4]))));
+                        networkList.Add(new NetworkActivity (t[0] , double.Parse(t[1]) , double.Parse(t[2]), Conversion(double.Parse(t[3])), Conversion(double.Parse(t[4]))));
                     }
                 } while (line != null);
             }
+            //List<NetworkActivity> SortedList = networkList.OrderBy(o => o.IP).ToList();
             return networkList;
         }
 
@@ -66,7 +67,7 @@ namespace NetworkLimiter
             return doc.DocumentNode.InnerText;
         }
 
-        public NetworkActivity(string IP, string Upload, string Download, string TotalSend, string TotalRecv)
+        public NetworkActivity(string IP, double Upload, double Download, string TotalSend, string TotalRecv)
         {
             this.IP = IP;
             this.Download = Download;
@@ -77,7 +78,7 @@ namespace NetworkLimiter
 
         public static List<NetworkActivity> getNeworkActivity()
         {
-            string rawHtml = (GetHtmlText("http://192.168.88.10"));
+            string rawHtml = (GetHtmlText("Http://localhost"));
             return parseText(rawHtml);
         }
     }

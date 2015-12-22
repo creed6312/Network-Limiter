@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Data;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace NetworkLimiter
@@ -22,6 +21,7 @@ namespace NetworkLimiter
         private MK mikrotik;
         private List<Host> Hosts;
         private List<Queue> Queues;
+        DataTable dataTableNetwork;
         #endregion
 
         #region Delegate Callbacks
@@ -123,18 +123,81 @@ namespace NetworkLimiter
 
             // Async Task
             Initialize();
+
+            dataTableNetwork = new DataTable("Network");
+            dataTableNetwork.Columns.Add(new DataColumn("Hostname", typeof(string)));
+            dataTableNetwork.Columns.Add(new DataColumn("IP", typeof(string)));
+            dataTableNetwork.Columns.Add(new DataColumn("Download", typeof(string)));
+            dataTableNetwork.Columns.Add(new DataColumn("Upload", typeof(string)));
+            dataTableNetwork.Columns.Add(new DataColumn("Total Recv", typeof(string)));
+            dataTableNetwork.Columns.Add(new DataColumn("Total Sent", typeof(string)));
+            dataGridInfo.ItemsSource = dataTableNetwork.AsDataView();
+
+            var columns = dataGridInfo.Columns;
+            columns[0].Width = 120;
+            columns[1].Width = 100;
+            columns[2].Width = 87;
+            columns[3].Width = 87;
+            columns[4].Width = 90;
+        }
+
+        private string Conversion(double value)
+        {
+           return ConvertToKbps(value) + " kB/s";
+        }
+
+        public double ConvertToKbps(double value)
+        {
+            // 1024 bytes in kilobyte Round 2 Decimals
+            return Math.Round(value / 1024, 2);
+        }
+
+        public string GetHostName(string IP)
+        {
+            for (int i = 0; i < Hosts.Count; i++)
+            {
+                if (IP.Equals(Hosts[i].getIP()))
+                    return Hosts[i].getComment();
+            }
+            return "Unknown";
         }
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
             richTextBox.Document.Blocks.Clear();
-            dataGridInfo.ItemsSource = NetworkActivity.getNeworkActivity();
-            var column = dataGridInfo.Columns;
-            column[0].Width = 95;
-            column[1].Width = 78;
-            column[2].Width = 78;
-            column[3].Width = 80;
-            column[4].Width = 80;
+            List<NetworkActivity> SortedList = NetworkActivity.getNeworkActivity().OrderByDescending(o => o.Download).ToList();
+            dataTableNetwork.Clear();
+            for (int i = 0; i < SortedList.Count; i++)
+            {
+                object[] values = { GetHostName(SortedList[i].IP) , SortedList[i].IP, Conversion(SortedList[i].Download), Conversion(SortedList[i].Upload), SortedList[i].TotalRecv, SortedList[i].TotalSend };
+                dataTableNetwork.Rows.Add(values);
+            }
+
+            DelayedExecutionService.DelayedExecute(() =>
+            {
+                if (dataGridInfo.Items.Count > 0)
+                {
+                    for (int i = 0; i < dataGridInfo.Items.Count; i++)
+                    {
+                        dataGridInfo.SelectedIndex = -1;
+                        if (ConvertToKbps(SortedList[i].Download) > 20)
+                        {
+                            Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
+                            row2.Foreground = Brushes.Red;
+                        }
+                        else if (ConvertToKbps(SortedList[i].Download) > 0)
+                        {
+                            Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
+                            row2.Foreground = Brushes.Green;
+                        }
+                        else 
+                        {
+                            Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
+                            row2.Foreground = Brushes.Gray;
+                        }
+                    }
+                }
+            }, 50);
         }
 
         public async void Initialize()
@@ -378,5 +441,8 @@ namespace NetworkLimiter
         }
         #endregion
 
+        private void button_Click(object sender, RoutedEventArgs e)
+        {
+        }
     }
 }
