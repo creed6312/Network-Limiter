@@ -6,10 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.DataVisualization.Charting;
-using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Shapes;
 
 namespace NetworkLimiter
 {
@@ -18,15 +15,15 @@ namespace NetworkLimiter
     /// </summary>
     /// 
 
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         #region Variables
-        private MK mikrotik;
-        private List<Host> Hosts;
-        private List<Queue> Queues;
-        DataTable dataTableNetwork;
-        int SecondCounter = 0;
-        public ObservableCollection<ChartPlot> values = new ObservableCollection<ChartPlot>();
+        private MK _mikrotik;
+        private List<Host> _hosts;
+        private List<Queue> _queues;
+        private DataTable _dataTableNetwork;
+        private int _secondCounter;
+        private readonly ObservableCollection<ChartPlot> _values = new ObservableCollection<ChartPlot>();
 
         public class ChartPlot
         {
@@ -39,91 +36,86 @@ namespace NetworkLimiter
         #region Delegate Callbacks
         public bool Login()
         {
-            bool Success = false;
-            Dispatcher.Invoke((Action)delegate ()
+            var success = false;
+            Dispatcher.Invoke(()=>
             {
-                mikrotik = new MK(txtIP.Text);
-                if (!mikrotik.Login(txtUsername.Text, txtPassword.Password))
+                _mikrotik = new MK(txtIP.Text);
+                if (!_mikrotik.Login(txtUsername.Text, txtPassword.Password))
                 {
                     MessageBox.Show("Failed to Login.");
-                    mikrotik.Close();
+                    _mikrotik.Close();
                     txtPassword.IsEnabled = true;
                     txtUsername.IsEnabled = true;
                     txtIP.IsEnabled = true;
                     btnLogin.Content = "Login";
-                    return ;
+                    return;
                 }
-                Success = true;
+                success = true;
                 txtPassword.IsEnabled = false;
                 txtUsername.IsEnabled = false;
                 txtIP.IsEnabled = false;
                 btnLogin.Content = "Log Out";
             });
-            return Success;
+            return success;
         }
 
         public void UpdateDebugLog(string message)
         {
-            Dispatcher.Invoke((Action)delegate ()
+            Dispatcher.Invoke(()=>
             {
-                if ((bool) chkDebug.IsChecked)
+                if (chkDebug.IsChecked != null && (bool) chkDebug.IsChecked)
                     richTextBox.AppendText(message);
             });
         }
 
         public void UpdateQueues()
         {
-            for (int k = 0; k < Hosts.Count; k++)
-                for (int m = 0; m < Queues.Count; m++)
-                    if (Hosts[k].getIP().Equals(Queues[m].getIP()))
-                    {
-                        Queues[m].setComment(Hosts[k].getComment());
-                        Queues[m].setOnline(Hosts[k].getOnline());
-                    }
+            foreach (var t in _hosts)
+                foreach (var t1 in _queues.Where(t1 => t.getIP().Equals(t1.getIP())))
+                {
+                    t1.setComment(t.getComment());
+                    t1.setOnline(t.getOnline());
+                }
 
-            Dispatcher.Invoke((Action)delegate ()
+            Dispatcher.Invoke(()=>
             {
                 lstboxQueue.Items.Clear();
-                for (int i = 0; i < Queues.Count; i++)
+                foreach (var queue in _queues)
                 {
-                    lstboxQueue.Items.Add(Queues[i].getIP() + " - " + Queues[i].getComment());
+                    lstboxQueue.Items.Add(queue.getIP() + " - " + queue.getComment());
                 }
 
                 DelayedExecutionService.DelayedExecute(() =>
                 {
-                    for (int i = 0; i < Queues.Count; i++)
+                    for (var i = 0; i < _queues.Count; i++)
                     {
-                        ListBoxItem item = lstboxQueue.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
-                        if (Queues[i].getOnline())
-                            item.Foreground = Brushes.Green;
-                        else item.Foreground = Brushes.Red;
+                        var item = lstboxQueue.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
+                        if (item != null) item.Foreground = _queues[i].getOnline() ? Brushes.Green : Brushes.Red;
                     }
                     lstboxQueue.SelectedIndex = 0;
-                }, 200);
+                }, 150);
             });
         }
 
         public void UpdateHosts()
         {
-            Dispatcher.Invoke((Action)delegate ()
+            Dispatcher.Invoke(()=>
             {
                 lstboxIP.Items.Clear();
-                List<Host> SortedList = Hosts.OrderBy(o => o.getIP()).ToList();
-                Hosts = SortedList;
-                for (int i = 0; i < SortedList.Count; i++)
-                    lstboxIP.Items.Add(SortedList[i].getIP() + " - " + SortedList[i].getComment());
+                var sortedList = _hosts.OrderBy(o => o.getIP()).ToList();
+                _hosts = sortedList;
+                foreach (var host in sortedList)
+                    lstboxIP.Items.Add(host.getIP() + " - " + host.getComment());
 
                 DelayedExecutionService.DelayedExecute(() =>
                 {
-                    for (int i = 0; i < SortedList.Count; i++)
+                    for (var i = 0; i < sortedList.Count; i++)
                     {
-                        ListBoxItem item = lstboxIP.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
-                        if (Hosts[i].getOnline())
-                            item.Foreground = Brushes.Green;
-                        else item.Foreground = Brushes.Red;
+                        var item = lstboxIP.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
+                        if (item != null) item.Foreground = _hosts[i].getOnline() ? Brushes.Green : Brushes.Red;
                     }
                     lstboxIP.SelectedIndex = 0;
-                }, 200);
+                }, 150);
             });
         }
         #endregion
@@ -135,23 +127,23 @@ namespace NetworkLimiter
 
             InitializeGrid();
             // Async Task
-            //Initialize();
+            Initialize();
 
-            MainChart.DataContext = this.values;
+            MainChart.DataContext = _values;
         }
 
         private void InitializeGrid()
         {
-            dataTableNetwork = new DataTable("Network");
-            dataTableNetwork.Columns.Add(new DataColumn("Hostname", typeof(string)));
-            dataTableNetwork.Columns.Add(new DataColumn("IP", typeof(string)));
-            dataTableNetwork.Columns.Add(new DataColumn("Download", typeof(string)));
-            dataTableNetwork.Columns.Add(new DataColumn("Upload", typeof(string)));
-            dataTableNetwork.Columns.Add(new DataColumn("Download Limit", typeof(string)));
-            dataTableNetwork.Columns.Add(new DataColumn("Upload Limit", typeof(string)));
-            dataTableNetwork.Columns.Add(new DataColumn("Total Recv", typeof(string)));
-            dataTableNetwork.Columns.Add(new DataColumn("Total Sent", typeof(string)));
-            dataGridInfo.ItemsSource = dataTableNetwork.AsDataView();
+            _dataTableNetwork = new DataTable("Network");
+            _dataTableNetwork.Columns.Add(new DataColumn("Hostname", typeof(string)));
+            _dataTableNetwork.Columns.Add(new DataColumn("IP", typeof(string)));
+            _dataTableNetwork.Columns.Add(new DataColumn("Download", typeof(string)));
+            _dataTableNetwork.Columns.Add(new DataColumn("Upload", typeof(string)));
+            _dataTableNetwork.Columns.Add(new DataColumn("Download Limit", typeof(string)));
+            _dataTableNetwork.Columns.Add(new DataColumn("Upload Limit", typeof(string)));
+            _dataTableNetwork.Columns.Add(new DataColumn("Total Recv", typeof(string)));
+            _dataTableNetwork.Columns.Add(new DataColumn("Total Sent", typeof(string)));
+            dataGridInfo.ItemsSource = _dataTableNetwork.AsDataView();
 
             var columns = dataGridInfo.Columns;
             columns[0].Width = 110;
@@ -179,87 +171,84 @@ namespace NetworkLimiter
             return Math.Round(value / 1024, 2);
         }
 
-        public void Graphing(List<NetworkActivity> SortedList)
+        public void Graphing(List<NetworkActivity> sortedList)
         {
-            SecondCounter += 1;
-            if (SecondCounter > 20)
-                values.RemoveAt(0);
-            ChartPlot cp = new ChartPlot();
-            cp.Key = SecondCounter;
+            _secondCounter += 1;
+            if (_secondCounter > 20)
+                _values.RemoveAt(0);
+            var chart = new ChartPlot {Key = _secondCounter};
 
-            foreach (var sl in SortedList)
+            foreach (var sl in sortedList)
             {
                 if (sl.Hostname.Equals("CreeD-PC"))
                 {
                     chart1.Title = sl.Hostname;
-                    cp.Value1 = sl.Download / 1024;
+                    chart.Value1 = sl.Download / 1024;
                 }
                 else if (sl.Hostname.Equals("Zay-PC"))
                 {
                     chart2.Title = sl.Hostname;
-                    cp.Value2 = sl.Download / 1024;
+                    chart.Value2 = sl.Download / 1024;
                 }
             }
-            values.Add(cp);
-            MainChart.DataContext = this.values;
+            _values.Add(chart);
+            MainChart.DataContext = _values;
         }
 
-        public List<NetworkActivity> SetHostLimits(List<NetworkActivity> SortedList)
+        public List<NetworkActivity> SetHostLimits(List<NetworkActivity> sortedList)
         {
-            foreach (var sl in SortedList)
+            foreach (var sl in sortedList)
             {
                 try
                 {
-                    sl.Hostname = Hosts.First(item => item.getIP() == sl.IP).getComment();
+                    sl.Hostname = _hosts.First(item => item.getIP() == sl.IP).getComment();
                 }
-                catch (Exception es)
+                catch (Exception)
                 {
                     sl.Hostname = "Unknown";
                 }
             }
-            foreach (var q in Queues)
+            foreach (var q in _queues)
             {
-                SortedList.First(item => item.IP == q.getIP()).DownloadLimit = q.getDown();
-                SortedList.First(item => item.IP == q.getIP()).UploadLimit = q.getUp();
+                sortedList.First(item => item.IP == q.getIP()).DownloadLimit = q.getDown();
+                sortedList.First(item => item.IP == q.getIP()).UploadLimit = q.getUp();
             }
-            return SortedList;
+            return sortedList;
         }
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
             richTextBox.Document.Blocks.Clear();
-            dataTableNetwork.Clear();
-            List<NetworkActivity> SortedList = NetworkActivity.getNeworkActivity().OrderByDescending(o => o.Download).ToList();
-            SortedList = SetHostLimits(SortedList);
-            for (int i = 0; i < SortedList.Count; i++)
+            _dataTableNetwork.Clear();
+            var sortedList = NetworkActivity.getNeworkActivity().OrderByDescending(o => o.Download).ToList();
+            sortedList = SetHostLimits(sortedList);
+            foreach (var host in sortedList)
             {
-                object[] values = { SortedList[i].Hostname , SortedList[i].IP, Conversion(SortedList[i].Download), Conversion(SortedList[i].Upload), BitsToBytes(SortedList[i].DownloadLimit), BitsToBytes(SortedList[i].UploadLimit), SortedList[i].TotalRecv, SortedList[i].TotalSend };
-                dataTableNetwork.Rows.Add(values);
+                object[] values = { host.Hostname , host.IP, Conversion(host.Download), Conversion(host.Upload), BitsToBytes(host.DownloadLimit), BitsToBytes(host.UploadLimit), host.TotalRecv, host.TotalSend };
+                _dataTableNetwork.Rows.Add(values);
             }
-            Graphing(SortedList);
+            Graphing(sortedList);
 
             DelayedExecutionService.DelayedExecute(() =>
             {
-                if (dataGridInfo.Items.Count > 0)
+                if (dataGridInfo.Items.Count <= 0) return;
+                for (var i = 0; i < dataGridInfo.Items.Count; i++)
                 {
-                    for (int i = 0; i < dataGridInfo.Items.Count; i++)
+                    dataGridInfo.SelectedIndex = -1;
+                    if (ConvertToKbps(sortedList[i].Download) > 20 || ConvertToKbps(sortedList[i].Upload) > 20)
                     {
-                        dataGridInfo.SelectedIndex = -1;
-                        if (ConvertToKbps(SortedList[i].Download) > 20 || ConvertToKbps(SortedList[i].Upload) > 20)
-                        {
-                            Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
-                            row2.Foreground = Brushes.Red;
-                        }
-                        else if (ConvertToKbps(SortedList[i].Download) > 0 || ConvertToKbps(SortedList[i].Upload) > 0)
-                        {
-                            Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
-                            row2.Foreground = Brushes.Green;
-                        }
-                        else 
-                        {
-                            Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
-                            row2.Foreground = Brushes.Gray;
-                        }
+                        var row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
+                        if (row2 != null) row2.Foreground = Brushes.Red;
+                    }
+                    else if (ConvertToKbps(sortedList[i].Download) > 0 || ConvertToKbps(sortedList[i].Upload) > 0)
+                    {
+                        var row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
+                        if (row2 != null) row2.Foreground = Brushes.Green;
+                    }
+                    else
+                    {
+                        var row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
+                        if (row2 != null) row2.Foreground = Brushes.Gray;
                     }
                 }
             }, 50);
@@ -271,11 +260,9 @@ namespace NetworkLimiter
             {
                 await Task.Run(() =>
                 {
-                    if (Login())
-                    {
-                        GetLeases();
-                        GetQueues();
-                    }
+                    if (!Login()) return;
+                    GetLeases();
+                    GetQueues();
                 });
             }
             catch (Exception ex)
@@ -283,7 +270,7 @@ namespace NetworkLimiter
                 UpdateDebugLog(ex.Message);
             }
 
-            System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
+            var dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += dispatcherTimer_Tick;
             dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 1);
             dispatcherTimer.Start();
@@ -312,13 +299,13 @@ namespace NetworkLimiter
             }
         }
 
-        public void LimitIP(string IP, string Comment, int Down, int Up)
+        public void LimitIp(string ip, string comment, int down, int up)
         {
-            mikrotik.Send("/queue/simple/add");
-            mikrotik.Send("=name=" + Comment);
-            mikrotik.Send("=target=" + IP);
-            mikrotik.Send("=max-limit=" + (Up * 8) + "k/" + (Down * 8) + "k", true);
-            foreach (string apiOutput in mikrotik.Read())
+            _mikrotik.Send("/queue/simple/add");
+            _mikrotik.Send("=name=" + comment);
+            _mikrotik.Send("=target=" + ip);
+            _mikrotik.Send("=max-limit=" + (up * 8) + "k/" + (down * 8) + "k", true);
+            foreach (var apiOutput in _mikrotik.Read())
             {
                 UpdateDebugLog(apiOutput + "\n");
             }
@@ -326,33 +313,29 @@ namespace NetworkLimiter
 
         public void GetLeases()
         {
-            Hosts = new List<Host>();
-            mikrotik.Send("/ip/dhcp-server/lease/print", true);
-            foreach (string apiOutput in mikrotik.Read())
+            _hosts = new List<Host>();
+            _mikrotik.Send("/ip/dhcp-server/lease/print", true);
+            foreach (var apiOutput in _mikrotik.Read())
             {
                 if (apiOutput.Contains("address"))
                 {
-                    string comment = "";
-                    bool alive = false;
+                    var alive = false;
 
-                    string[] stringSplit = apiOutput.Split('=');
-                    var lstDHCPInfo = new List<KeyValuePair<string, string>>();
-                    for (int i = 1; i < stringSplit.Length-1; i+=2)
-                        lstDHCPInfo.Add(new KeyValuePair<string, string>(stringSplit[i], stringSplit[i+1]));
+                    var stringSplit = apiOutput.Split('=');
+                    var lstDhcpInfo = new List<KeyValuePair<string, string>>();
+                    for (var i = 1; i < stringSplit.Length-1; i+=2)
+                        lstDhcpInfo.Add(new KeyValuePair<string, string>(stringSplit[i], stringSplit[i+1]));
 
                     // Gets IP address from Key Value Pair
-                    string ipAddress = (lstDHCPInfo.First(kvp => kvp.Key == "address").Value);
+                    var ipAddress = (lstDhcpInfo.First(kvp => kvp.Key == "address").Value);
                     // Checks that there is a Comment
-                    if (apiOutput.Contains("comment"))
-                        comment = (lstDHCPInfo.First(kvp => kvp.Key == "comment").Value);
-                    else
-                        comment = "Unknown";
+                    var comment = apiOutput.Contains("comment") ? (lstDhcpInfo.First(kvp => kvp.Key == "comment").Value) : "Unknown";
 
                     // Checks if the lease expires meaning the host is alive
                     if (apiOutput.Contains("expires-after"))
                         alive = true;
 
-                    Hosts.Add(new Host(ipAddress, comment, alive));
+                    _hosts.Add(new Host(ipAddress, comment, alive));
                 }
                 UpdateDebugLog(apiOutput + "\n");
             }
@@ -361,36 +344,36 @@ namespace NetworkLimiter
 
         private void GetQueues()
         {
-            Queues = new List<Queue>();
-            mikrotik.Send("/queue/simple/print", true);
-            foreach (string apiOutput in mikrotik.Read())
+            _queues = new List<Queue>();
+            _mikrotik.Send("/queue/simple/print", true);
+            foreach (var apiOutput in _mikrotik.Read())
             {
                 if (apiOutput.Contains("id"))
                 {
-                    string[] stringSplit = apiOutput.Split('=');
-                    var lstDHCPInfo = new List<KeyValuePair<string, string>>();
-                    for (int i = 1; i < stringSplit.Length - 1; i += 2)
-                        lstDHCPInfo.Add(new KeyValuePair<string, string>(stringSplit[i], stringSplit[i + 1]));
+                    var stringSplit = apiOutput.Split('=');
+                    var lstDhcpInfo = new List<KeyValuePair<string, string>>();
+                    for (var i = 1; i < stringSplit.Length - 1; i += 2)
+                        lstDhcpInfo.Add(new KeyValuePair<string, string>(stringSplit[i], stringSplit[i + 1]));
 
                     // Gets IP address from Key Value Pair
-                    string id = (lstDHCPInfo.First(kvp => kvp.Key == ".id").Value);
+                    var id = (lstDhcpInfo.First(kvp => kvp.Key == ".id").Value);
                     // remove the /32 as address subnet not needed
-                    string target = (lstDHCPInfo.First(kvp => kvp.Key == "target").Value).Replace("/32","");
+                    var target = (lstDhcpInfo.First(kvp => kvp.Key == "target").Value).Replace("/32","");
                     // Split Up and Down speed
-                    string[] UpDown = lstDHCPInfo.First(kvp => kvp.Key == "max-limit").Value.Split('/');
+                    var upDown = lstDhcpInfo.First(kvp => kvp.Key == "max-limit").Value.Split('/');
 
-                    Queues.Add(new Queue(id, target, int.Parse(UpDown[0]), int.Parse(UpDown[1])));
+                    _queues.Add(new Queue(id, target, int.Parse(upDown[0]), int.Parse(upDown[1])));
                 }
                 UpdateDebugLog(apiOutput + "\n");
             }
             UpdateQueues();
         }
 
-        private void RemoveQueue(string ID)
+        private void RemoveQueue(string id)
         {
-            mikrotik.Send("/queue/simple/remove");
-            mikrotik.Send("=.id=" + ID, true);
-            foreach (string h in mikrotik.Read())
+            _mikrotik.Send("/queue/simple/remove");
+            _mikrotik.Send("=.id=" + id, true);
+            foreach (var h in _mikrotik.Read())
             {
                 UpdateDebugLog(h + "\n");
             }
@@ -405,28 +388,28 @@ namespace NetworkLimiter
         private void btnSetSpeed_Click(object sender, RoutedEventArgs e)
         {
             richTextBox.Document.Blocks.Clear();
-            string ip = Hosts[lstboxIP.SelectedIndex].getIP();
+            string ip = _hosts[lstboxIP.SelectedIndex].getIP();
 
-            for (int i = 0; i < Queues.Count; i++)
+            for (int i = 0; i < _queues.Count; i++)
             {
-                if (Queues[i].getIP().Contains(ip))
+                if (_queues[i].getIP().Contains(ip))
                 {
-                    mikrotik.Send("/queue/simple/remove");
-                    mikrotik.Send("=.id=" + Queues[i].getID(), true);
-                    foreach (string h in mikrotik.Read())
+                    _mikrotik.Send("/queue/simple/remove");
+                    _mikrotik.Send("=.id=" + _queues[i].getID(), true);
+                    foreach (string h in _mikrotik.Read())
                     {
                         UpdateDebugLog(h + "\n");
                     }
                     break;
                 }
             }
-            LimitIP(ip, Hosts[lstboxIP.SelectedIndex].getComment(), int.Parse(txtDown.Text), int.Parse(txtUp.Text));
+            LimitIp(ip, _hosts[lstboxIP.SelectedIndex].getComment(), int.Parse(txtDown.Text), int.Parse(txtUp.Text));
             GetQueues();
         }
 
         private void btnRemove_Click(object sender, RoutedEventArgs e)
         {
-            RemoveQueue(Queues[lstboxQueue.SelectedIndex].getID());
+            RemoveQueue(_queues[lstboxQueue.SelectedIndex].getID());
         }
 
         private void btnLogin_Click(object sender, RoutedEventArgs e)
@@ -436,8 +419,8 @@ namespace NetworkLimiter
                 txtPassword.IsEnabled = true;
                 txtUsername.IsEnabled = true;
                 txtIP.IsEnabled = true;
-                Queues.Clear();
-                Hosts.Clear();
+                _queues.Clear();
+                _hosts.Clear();
                 UpdateHosts();
                 UpdateQueues();
                 btnLogin.Content = "Login";
@@ -452,7 +435,7 @@ namespace NetworkLimiter
         #region UI Events
         private void chkDebug_Click(object sender, RoutedEventArgs e)
         {
-            if ((bool)chkDebug.IsChecked)
+            if (chkDebug.IsChecked != null && (bool)chkDebug.IsChecked)
                 richTextBox.Visibility = Visibility.Visible;
             else richTextBox.Visibility = Visibility.Hidden;
         }
@@ -466,19 +449,15 @@ namespace NetworkLimiter
         private void lstboxQueue_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             btnSetSpeed.IsEnabled = false;
-            if (lstboxQueue.SelectedIndex > -1)
+            if (lstboxQueue.SelectedIndex <= -1) return;
+            txtDown.Text = (_queues[lstboxQueue.SelectedIndex].getDown() / 8000).ToString();
+            txtUp.Text = (_queues[lstboxQueue.SelectedIndex].getUp() / 8000).ToString();
+            for (var i = 0; i < _hosts.Count; i++)
             {
-                txtDown.Text = (Queues[lstboxQueue.SelectedIndex].getDown() / 8000).ToString();
-                txtUp.Text = (Queues[lstboxQueue.SelectedIndex].getUp() / 8000).ToString();
-                for (int i = 0; i < Hosts.Count; i++)
-                {
-                    if (Queues[lstboxQueue.SelectedIndex].getIP().Contains(Hosts[i].getIP()))
-                    {
-                        lstboxIP.SelectedIndex = i;
-                        btnSetSpeed.IsEnabled = true;
-                        break;
-                    }
-                }
+                if (!_queues[lstboxQueue.SelectedIndex].getIP().Contains(_hosts[i].getIP())) continue;
+                lstboxIP.SelectedIndex = i;
+                btnSetSpeed.IsEnabled = true;
+                break;
             }
         }
 
@@ -491,23 +470,15 @@ namespace NetworkLimiter
         private void lstboxIP_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             btnRemove.IsEnabled = false;
-            if (lstboxIP.SelectedIndex > -1)
+            if (lstboxIP.SelectedIndex <= -1) return;
+            for (var i = 0; i < _queues.Count; i++)
             {
-                for (int i = 0; i < Queues.Count; i++)
-                {
-                    if (Hosts[lstboxIP.SelectedIndex].getIP().Contains(Queues[i].getIP()))
-                    {
-                        lstboxQueue.SelectedIndex = i;
-                        btnRemove.IsEnabled = true;
-                        break;
-                    }
-                }
+                if (!_hosts[lstboxIP.SelectedIndex].getIP().Contains(_queues[i].getIP())) continue;
+                lstboxQueue.SelectedIndex = i;
+                btnRemove.IsEnabled = true;
+                break;
             }
         }
         #endregion
-
-        private void button_Click(object sender, RoutedEventArgs e)
-        {
-        }
     }
 }

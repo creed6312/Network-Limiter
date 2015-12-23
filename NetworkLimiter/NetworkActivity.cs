@@ -50,7 +50,7 @@ namespace NetworkLimiter
         private static double ConvertToKbps(double value)
         {
             // 1024 bytes in kilobyte Round 2 Decimals
-            return Math.Round(value / 1024,2);
+            return Math.Round(value / 1024, 2);
         }
 
         private static double ConvertToMbps(double value)
@@ -77,7 +77,7 @@ namespace NetworkLimiter
 
         public static List<NetworkActivity> getNeworkActivity()
         {
-            string rawHtml = (GetHtmlText("http://creed.ddns.net/"));
+            string rawHtml = (GetHtmlText("http://localhost"));
             if (rawHtml != "")
                 return parseText(rawHtml);
             else return null;

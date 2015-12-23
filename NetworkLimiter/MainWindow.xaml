@@ -32,7 +32,7 @@
         <ListBox Visibility="Hidden" x:Name="lstboxQueue" ScrollViewer.VerticalScrollBarVisibility="Visible" GotFocus="lstboxQueue_GotFocus" HorizontalAlignment="Left" Width="230" Margin="245,41,0,10" SelectionChanged="lstboxQueue_SelectionChanged" FontSize="13.333">
 
         </ListBox>
-        <TextBox x:Name="txtIP" HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalContentAlignment="Center" Height="29" Margin="10,20,0,0" Text="creed.ddns.net" VerticalAlignment="Top" Width="146" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
+        <TextBox x:Name="txtIP" HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalContentAlignment="Center" Height="29" Margin="10,20,0,0" Text="192.168.88.1" VerticalAlignment="Top" Width="146" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
         <TextBox x:Name="txtUsername" HorizontalContentAlignment="Center" HorizontalAlignment="Left" Height="29" Margin="166,20,0,0" Text="admin" VerticalAlignment="Top" Width="126" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold" RenderTransformOrigin="-0.143,0.69"/>
         <PasswordBox x:Name="txtPassword" HorizontalContentAlignment="Center"  HorizontalAlignment="Left" Height="29" Margin="296,20,0,0" Password="13579" VerticalAlignment="Top" Width="110" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
         <Button x:Name="btnLogin" Click="btnLogin_Click" Content="Login" VerticalAlignment="Top" Margin="412,20,0,0" FontFamily="Palatino Linotype" FontSize="15" FontWeight="Bold" Height="29" HorizontalAlignment="Left" Width="90"/>
