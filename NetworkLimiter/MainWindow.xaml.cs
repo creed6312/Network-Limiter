@@ -10,7 +10,6 @@ using System.Windows.Controls.DataVisualization.Charting;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using Visifire.Charts;
 
 namespace NetworkLimiter
 {
