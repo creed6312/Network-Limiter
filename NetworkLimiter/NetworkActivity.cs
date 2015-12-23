@@ -30,7 +30,7 @@ namespace NetworkLimiter
                 do
                 {
                     line = reader.ReadLine();
-                    if (line != null)
+                    if (line != null && !line.Equals(""))
                     {
                         string[] t = line.Split(',');
                         // added /s for download and Upload for per second
@@ -81,8 +81,10 @@ namespace NetworkLimiter
 
         public static List<NetworkActivity> getNeworkActivity()
         {
-            string rawHtml = (GetHtmlText("Http://localhost"));
-            return parseText(rawHtml);
+            string rawHtml = (GetHtmlText("http://creed.ddns.net/"));
+            if (rawHtml != "")
+                return parseText(rawHtml);
+            else return null;
         }
     }
 }

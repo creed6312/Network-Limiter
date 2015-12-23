@@ -9,7 +9,7 @@
         xmlns:chartingToolkit="clr-namespace:System.Windows.Controls.DataVisualization.Charting;assembly=System.Windows.Controls.DataVisualization.Toolkit"
         xmlns:local="clr-namespace:NetworkLimiter" 
         mc:Ignorable="d"
-        Title="Network Limiter" Height="884.128" Width="1739.379" ResizeMode="NoResize">
+        Title="Network Limiter" Height="884.128" Width="1739.379" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
 
     <Grid Margin="0,0,-6,0" Background="#FF708986" >
         <Grid.ColumnDefinitions>
@@ -23,20 +23,20 @@
                 </Paragraph>
             </FlowDocument>
         </RichTextBox>
-        <TextBox x:Name="txtDown" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" HorizontalAlignment="Left" Height="38" Margin="494,19,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="81" FontFamily="Palatino Linotype" FontSize="25.333"/>
-        <TextBox x:Name="txtUp" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  HorizontalAlignment="Left" Height="38" Margin="628,18,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="81" FontFamily="Palatino Linotype" FontSize="25.333"/>
-        <Label x:Name="txtDownload" Content="Download" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="494,-6,0,0" FontFamily="Palatino Linotype" FontSize="15" Height="40" Width="81" />
-        <Label x:Name="txtUpload" Content="Upload" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="628,-8,0,0" FontFamily="Palatino Linotype" FontSize="15" Height="40" Width="81" />
-        <Label x:Name="txtkb" Content="KB/s" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="575,22,0,0" FontFamily="Palatino Linotype" FontSize="20" Height="40" Width="73" />
-        <Label x:Name="txtkb2" Content="KB/s" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="709,20,0,0" FontFamily="Palatino Linotype" FontSize="20" Height="40" Width="53"/>
+        <TextBox x:Name="txtDown" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" HorizontalAlignment="Left" Height="38" Margin="512,22,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="80" FontFamily="Palatino Linotype" FontSize="25.333"/>
+        <TextBox x:Name="txtUp" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  HorizontalAlignment="Left" Height="38" Margin="646,21,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="80" FontFamily="Palatino Linotype" FontSize="25.333"/>
+        <Label x:Name="txtDownload" Content="Download" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="512,-3,0,0" FontFamily="Palatino Linotype" FontSize="15" Height="40" Width="80" />
+        <Label x:Name="txtUpload" Content="Upload" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="646,-5,0,0" FontFamily="Palatino Linotype" FontSize="15" Height="40" Width="80" />
+        <Label x:Name="txtkb" Content="KB/s" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="592,25,0,0" FontFamily="Palatino Linotype" FontSize="20" Height="40" Width="74" />
+        <Label x:Name="txtkb2" Content="KB/s" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="726,23,0,0" FontFamily="Palatino Linotype" FontSize="20" Height="40" Width="54"/>
         <ListBox x:Name="lstboxIP" ScrollViewer.VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Width="235" Margin="10,62,0,10" GotFocus="lstboxIP_GotFocus" SelectionChanged="lstboxIP_SelectionChanged" FontSize="13.333"/>
         <ListBox Visibility="Hidden" x:Name="lstboxQueue" ScrollViewer.VerticalScrollBarVisibility="Visible" GotFocus="lstboxQueue_GotFocus" HorizontalAlignment="Left" Width="230" Margin="245,41,0,10" SelectionChanged="lstboxQueue_SelectionChanged" FontSize="13.333">
 
         </ListBox>
-        <TextBox x:Name="txtIP" HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalContentAlignment="Center" Height="29" Margin="10,22,0,0" Text="192.168.88.1" VerticalAlignment="Top" Width="125" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
-        <TextBox x:Name="txtUsername" HorizontalContentAlignment="Center" HorizontalAlignment="Left" Height="29" Margin="140,22,0,0" Text="admin" VerticalAlignment="Top" Width="125" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
-        <PasswordBox x:Name="txtPassword" HorizontalContentAlignment="Center"  HorizontalAlignment="Left" Height="29" Margin="270,22,0,0" Password="13579" VerticalAlignment="Top" Width="110" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
-        <Button x:Name="btnLogin" Click="btnLogin_Click" Content="Login" VerticalAlignment="Top" Margin="385,22,0,0" FontFamily="Palatino Linotype" FontSize="15" FontWeight="Bold" Height="29" HorizontalAlignment="Left" Width="90"/>
+        <TextBox x:Name="txtIP" HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalContentAlignment="Center" Height="29" Margin="10,20,0,0" Text="creed.ddns.net" VerticalAlignment="Top" Width="146" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
+        <TextBox x:Name="txtUsername" HorizontalContentAlignment="Center" HorizontalAlignment="Left" Height="29" Margin="166,20,0,0" Text="admin" VerticalAlignment="Top" Width="126" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold" RenderTransformOrigin="-0.143,0.69"/>
+        <PasswordBox x:Name="txtPassword" HorizontalContentAlignment="Center"  HorizontalAlignment="Left" Height="29" Margin="296,20,0,0" Password="13579" VerticalAlignment="Top" Width="110" FontSize="17" FontFamily="Palatino Linotype" FontWeight="Bold"/>
+        <Button x:Name="btnLogin" Click="btnLogin_Click" Content="Login" VerticalAlignment="Top" Margin="412,20,0,0" FontFamily="Palatino Linotype" FontSize="15" FontWeight="Bold" Height="29" HorizontalAlignment="Left" Width="90"/>
         <CheckBox Visibility="Hidden" x:Name="chkDebug" VerticalContentAlignment="Center" Content="Debug" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="150,10,0,0" FontFamily="Palatino Linotype" FontSize="17" Click="chkDebug_Click" RenderTransformOrigin="-0.225,0.487" Grid.Column="1" Height="22" Width="70"/>
         <xcdg:DataGridControl Name="dataGridInfo" Margin="250,62,0,10" SelectionMode="Single" BorderThickness="0" FontFamily="Palatino Linotype" FontSize="14" FontWeight="Bold" ReadOnly="True" HorizontalAlignment="Left" Width="791" Grid.ColumnSpan="2" >
             <xcdg:DataGridControl.View >
@@ -77,8 +77,8 @@
             </Grid>
         </ScrollViewer>
 
-        <Button x:Name="btnSetSpeed" IsEnabled="False" Click="btnSetSpeed_Click" Content="Limit" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130" Margin="781,20,0,0" FontFamily="Palatino Linotype" FontSize="24" FontWeight="Bold" RenderTransformOrigin="0.131,0.5" Height="36"/>
-        <Button x:Name="btnRemove" IsEnabled="False" Click="btnRemove_Click" Content="Remove" VerticalAlignment="Top" Margin="916,20,0,0" FontFamily="Palatino Linotype" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" Width="125" Grid.ColumnSpan="2" Height="36"/>
+        <Button x:Name="btnSetSpeed" IsEnabled="False" Click="btnSetSpeed_Click" Content="Limit" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130" Margin="780,20,0,0" FontFamily="Palatino Linotype" FontSize="24" FontWeight="Bold" RenderTransformOrigin="0.131,0.5" Height="36"/>
+        <Button x:Name="btnRemove" IsEnabled="False" Click="btnRemove_Click" Content="Remove" VerticalAlignment="Top" Margin="915,20,0,0" FontFamily="Palatino Linotype" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" Width="125" Height="36" Grid.ColumnSpan="2"/>
 
     </Grid>
 </Window>

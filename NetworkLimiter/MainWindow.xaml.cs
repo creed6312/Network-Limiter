@@ -26,8 +26,15 @@ namespace NetworkLimiter
         private List<Host> Hosts;
         private List<Queue> Queues;
         DataTable dataTableNetwork;
-        ObservableCollection<KeyValuePair<double, double>> Power = new ObservableCollection<KeyValuePair<double, double>>();
         int SecondCounter = 0;
+        public ObservableCollection<ChartPlot> values = new ObservableCollection<ChartPlot>();
+
+        public class ChartPlot
+        {
+            public int Key { get; set; }
+            public double Value1 { get; set; }
+            public double Value2 { get; set; }
+        }
         #endregion
 
         #region Delegate Callbacks
@@ -129,18 +136,9 @@ namespace NetworkLimiter
 
             InitializeGrid();
             // Async Task
-            Initialize();
+            //Initialize();
 
             MainChart.DataContext = this.values;
-        }
-
-        public ObservableCollection<ChartPlot> values = new ObservableCollection<ChartPlot>();
-
-        public class ChartPlot
-        {
-            public int Key { get; set; }
-            public double Value1 { get; set; }
-            public double Value2 { get; set; }
         }
 
         private void InitializeGrid()
