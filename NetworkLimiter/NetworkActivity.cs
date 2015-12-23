@@ -8,11 +8,14 @@ using System.Windows;
 
 namespace NetworkLimiter
 {
-    class NetworkActivity
+    public class NetworkActivity
     {
+        public string Hostname { get; set; }
         public string IP { get; set; }
         public double Download { get; set; }
         public double Upload { get; set; }
+        public double DownloadLimit { get; set; }
+        public double UploadLimit { get; set; }
         public string TotalSend { get; set; }
         public string TotalRecv { get; set; }
 
@@ -39,7 +42,7 @@ namespace NetworkLimiter
             return networkList;
         }
 
-        public static string Conversion(double value)
+        private static string Conversion(double value)
         {
             // if more than 1 million used Megabytes
             if (value > 1000000)
@@ -48,26 +51,26 @@ namespace NetworkLimiter
                 return ConvertToKbps(value).ToString() + " kB";
         }
 
-        public static double ConvertToKbps(double value)
+        private static double ConvertToKbps(double value)
         {
             // 1024 bytes in kilobyte Round 2 Decimals
             return Math.Round(value / 1024,2);
         }
 
-        public static double ConvertToMbps(double value)
+        private static double ConvertToMbps(double value)
         {
             // 1024 * 1024 bytes in megabytes Round 2 Decimals
             return Math.Round(value / (1024 * 1024), 2);
         }
 
-        public static string GetHtmlText(string Link)
+        private static string GetHtmlText(string Link)
         {
             HtmlAgilityPack.HtmlWeb web = new HtmlAgilityPack.HtmlWeb();
             HtmlAgilityPack.HtmlDocument doc = web.Load(Link);
             return doc.DocumentNode.InnerText;
         }
 
-        public NetworkActivity(string IP, double Upload, double Download, string TotalSend, string TotalRecv)
+        private NetworkActivity(string IP, double Upload, double Download, string TotalSend, string TotalRecv)
         {
             this.IP = IP;
             this.Download = Download;

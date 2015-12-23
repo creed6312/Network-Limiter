@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.DataVisualization.Charting;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Shapes;
+using Visifire.Charts;
 
 namespace NetworkLimiter
 {
@@ -22,6 +26,8 @@ namespace NetworkLimiter
         private List<Host> Hosts;
         private List<Queue> Queues;
         DataTable dataTableNetwork;
+        ObservableCollection<KeyValuePair<double, double>> Power = new ObservableCollection<KeyValuePair<double, double>>();
+        int SecondCounter = 0;
         #endregion
 
         #region Delegate Callbacks
@@ -121,29 +127,53 @@ namespace NetworkLimiter
         {
             InitializeComponent();
 
+            InitializeGrid();
             // Async Task
             Initialize();
 
+            MainChart.DataContext = this.values;
+        }
+
+        public ObservableCollection<ChartPlot> values = new ObservableCollection<ChartPlot>();
+
+        public class ChartPlot
+        {
+            public int Key { get; set; }
+            public double Value1 { get; set; }
+            public double Value2 { get; set; }
+        }
+
+        private void InitializeGrid()
+        {
             dataTableNetwork = new DataTable("Network");
             dataTableNetwork.Columns.Add(new DataColumn("Hostname", typeof(string)));
             dataTableNetwork.Columns.Add(new DataColumn("IP", typeof(string)));
             dataTableNetwork.Columns.Add(new DataColumn("Download", typeof(string)));
             dataTableNetwork.Columns.Add(new DataColumn("Upload", typeof(string)));
+            dataTableNetwork.Columns.Add(new DataColumn("Download Limit", typeof(string)));
+            dataTableNetwork.Columns.Add(new DataColumn("Upload Limit", typeof(string)));
             dataTableNetwork.Columns.Add(new DataColumn("Total Recv", typeof(string)));
             dataTableNetwork.Columns.Add(new DataColumn("Total Sent", typeof(string)));
             dataGridInfo.ItemsSource = dataTableNetwork.AsDataView();
 
             var columns = dataGridInfo.Columns;
-            columns[0].Width = 120;
+            columns[0].Width = 110;
             columns[1].Width = 100;
-            columns[2].Width = 87;
-            columns[3].Width = 87;
-            columns[4].Width = 90;
+            columns[2].Width = 90;
+            columns[3].Width = 90;
+            columns[4].Width = 110;
+            columns[5].Width = 100;
+            columns[6].Width = 90;
         }
 
         private string Conversion(double value)
         {
            return ConvertToKbps(value) + " kB/s";
+        }
+
+        private string BitsToBytes(double value)
+        {
+            return value / 8000 + " KB";
         }
 
         public double ConvertToKbps(double value)
@@ -152,26 +182,64 @@ namespace NetworkLimiter
             return Math.Round(value / 1024, 2);
         }
 
-        public string GetHostName(string IP)
+        public void Graphing(List<NetworkActivity> SortedList)
         {
-            for (int i = 0; i < Hosts.Count; i++)
+            SecondCounter += 1;
+            if (SecondCounter > 20)
+                values.RemoveAt(0);
+            ChartPlot cp = new ChartPlot();
+            cp.Key = SecondCounter;
+
+            foreach (var sl in SortedList)
             {
-                if (IP.Equals(Hosts[i].getIP()))
-                    return Hosts[i].getComment();
+                if (sl.Hostname.Equals("CreeD-PC"))
+                {
+                    chart1.Title = sl.Hostname;
+                    cp.Value1 = sl.Download / 1024;
+                }
+                else if (sl.Hostname.Equals("Zay-PC"))
+                {
+                    chart2.Title = sl.Hostname;
+                    cp.Value2 = sl.Download / 1024;
+                }
             }
-            return "Unknown";
+            values.Add(cp);
+            MainChart.DataContext = this.values;
+        }
+
+        public List<NetworkActivity> SetHostLimits(List<NetworkActivity> SortedList)
+        {
+            foreach (var sl in SortedList)
+            {
+                try
+                {
+                    sl.Hostname = Hosts.First(item => item.getIP() == sl.IP).getComment();
+                }
+                catch (Exception es)
+                {
+                    sl.Hostname = "Unknown";
+                }
+            }
+            foreach (var q in Queues)
+            {
+                SortedList.First(item => item.IP == q.getIP()).DownloadLimit = q.getDown();
+                SortedList.First(item => item.IP == q.getIP()).UploadLimit = q.getUp();
+            }
+            return SortedList;
         }
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
             richTextBox.Document.Blocks.Clear();
-            List<NetworkActivity> SortedList = NetworkActivity.getNeworkActivity().OrderByDescending(o => o.Download).ToList();
             dataTableNetwork.Clear();
+            List<NetworkActivity> SortedList = NetworkActivity.getNeworkActivity().OrderByDescending(o => o.Download).ToList();
+            SortedList = SetHostLimits(SortedList);
             for (int i = 0; i < SortedList.Count; i++)
             {
-                object[] values = { GetHostName(SortedList[i].IP) , SortedList[i].IP, Conversion(SortedList[i].Download), Conversion(SortedList[i].Upload), SortedList[i].TotalRecv, SortedList[i].TotalSend };
+                object[] values = { SortedList[i].Hostname , SortedList[i].IP, Conversion(SortedList[i].Download), Conversion(SortedList[i].Upload), BitsToBytes(SortedList[i].DownloadLimit), BitsToBytes(SortedList[i].UploadLimit), SortedList[i].TotalRecv, SortedList[i].TotalSend };
                 dataTableNetwork.Rows.Add(values);
             }
+            Graphing(SortedList);
 
             DelayedExecutionService.DelayedExecute(() =>
             {
@@ -180,12 +248,12 @@ namespace NetworkLimiter
                     for (int i = 0; i < dataGridInfo.Items.Count; i++)
                     {
                         dataGridInfo.SelectedIndex = -1;
-                        if (ConvertToKbps(SortedList[i].Download) > 20)
+                        if (ConvertToKbps(SortedList[i].Download) > 20 || ConvertToKbps(SortedList[i].Upload) > 20)
                         {
                             Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
                             row2.Foreground = Brushes.Red;
                         }
-                        else if (ConvertToKbps(SortedList[i].Download) > 0)
+                        else if (ConvertToKbps(SortedList[i].Download) > 0 || ConvertToKbps(SortedList[i].Upload) > 0)
                         {
                             Xceed.Wpf.DataGrid.DataRow row2 = dataGridInfo.GetContainerFromItem(dataGridInfo.Items[i]) as Xceed.Wpf.DataGrid.DataRow;
                             row2.Foreground = Brushes.Green;
